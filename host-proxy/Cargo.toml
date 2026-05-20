@@ -1,0 +1,44 @@
+[package]
+name = "moonlight-host-proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+tokio-rustls = "0.26"
+axum = { version = "0.8", features = ["ws"] }
+axum-server = { version = "0.8", features = ["tls-rustls"] }
+futures-util = "0.3"
+rustls = "0.23"
+rustls-pemfile = "2"
+openssl = { version = "0.10", features = ["vendored"] }
+clap = { version = "4", features = ["derive"] }
+reqwest = { version = "0.11", default-features = false, features = ["native-tls"] }
+hex = "0.4"
+uuid = { version = "1", features = ["v4"] }
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+dirs = "6"
+tower-http = { version = "0.6", features = ["fs", "set-header"] }
+simple-mdns = "0.7"
+bytes = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+url = ">=2.4, <2.5"
+idna = "<1"
+socket2 = { version = "0.5", features = ["all"] }
+time = ">=0.3.30, <0.3.40"
+getrandom = "0.2"
+# Embeds the PWA (../dist) into the proxy binary so a single executable
+# is shippable. The compile fails if ../dist doesn't exist — run
+# `npm run build` once before `cargo build`.
+rust-embed = "8"
+mime_guess = "2"
+
+[profile.release]
+opt-level = 2
+lto = true
+codegen-units = 1

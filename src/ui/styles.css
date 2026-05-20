@@ -1,0 +1,194 @@
+:root {
+  --bg: #0d0d10;
+  --bg-elev: #16161c;
+  --bg-elev-2: #1f1f28;
+  --border: #2a2a35;
+  --fg: #e6e6f0;
+  --fg-muted: #9999a6;
+  --accent: #76b900; /* NVIDIA green; replace per branding */
+  --danger: #ff5566;
+  --radius: 10px;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+}
+
+button {
+  background: var(--bg-elev-2);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 80ms ease;
+}
+button:hover { background: var(--border); }
+button.primary {
+  background: var(--accent);
+  color: #0b0b10;
+  border-color: var(--accent);
+  font-weight: 600;
+}
+button.danger { background: var(--danger); border-color: var(--danger); color: white; }
+
+input, select {
+  background: var(--bg-elev);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+/* ---- layouts ---- */
+.shell {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  height: 100%;
+}
+.shell header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elev);
+}
+.shell header h1 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+.shell main {
+  overflow: auto;
+  padding: 24px;
+}
+
+.host-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.host-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.host-card:hover { border-color: var(--accent); }
+.host-card h3 { margin: 0; font-size: 16px; }
+.host-card .meta { color: var(--fg-muted); font-size: 12px; }
+
+/* ---- stream view ---- */
+.stream-view {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: grid;
+  place-items: center;
+}
+.stream-view canvas,
+.stream-view video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.overlay {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--fg-muted);
+  pointer-events: none;
+  font-variant-numeric: tabular-nums;
+  opacity: 1;
+  transition: opacity 400ms ease;
+}
+.overlay.hidden {
+  opacity: 0;
+}
+
+.banner {
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  color: var(--fg-muted);
+  font-size: 13px;
+}
+.banner.warn { border-color: #b88500; color: #ffd680; }
+.banner.error { border-color: var(--danger); color: var(--danger); }
+
+/* ---- modal ---- */
+.modal-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+}
+.modal {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px 28px;
+  min-width: 360px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.modal h2 { margin: 0; font-size: 18px; }
+.modal p  { margin: 0; color: var(--fg-muted); font-size: 14px; line-height: 1.45; }
+.modal .pin {
+  font-size: 56px;
+  font-weight: 600;
+  letter-spacing: 12px;
+  text-align: center;
+  padding: 16px 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.modal .status {
+  font-size: 13px;
+  color: var(--fg-muted);
+  min-height: 18px;
+}
+.modal .status.error { color: var(--danger); }
+.modal .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}

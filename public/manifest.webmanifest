@@ -1,0 +1,37 @@
+{
+  "name": "Moonlight Game Streaming",
+  "short_name": "Moonlight",
+  "description": "Low-latency game streaming client for NVIDIA GameStream and Sunshine.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "fullscreen", "standalone"],
+  "orientation": "landscape",
+  "background_color": "#0d0d10",
+  "theme_color": "#0d0d10",
+  "categories": ["games", "entertainment", "utilities"],
+  "lang": "en",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Connect",
+      "short_name": "Connect",
+      "description": "Resume the last streaming session",
+      "url": "/?quick=1",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "permissions_policy": {
+    "fullscreen": ["self"],
+    "keyboard-map": ["self"],
+    "gamepad": ["self"]
+  }
+}

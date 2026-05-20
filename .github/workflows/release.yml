@@ -1,0 +1,166 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g. v0.1.0). Leave blank for a draft only.'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  # ----------------------------------------------------------------------
+  # Build the PWA + wasm once on Linux. The bundle is identical across all
+  # target OSes, so the per-OS jobs just download it and embed it in their
+  # own native proxy binary.
+  # ----------------------------------------------------------------------
+  build-pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Setup Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+          actions-cache-folder: 'emsdk-cache'
+
+      # Don't cache wasm/build or wasm/deps — emsdk reinstalls to a fresh
+      # temp dir on every run, so CMakeCache.txt's absolute compiler path
+      # goes stale and the next run fails with "CMAKE_C_COMPILER ... is
+      # not a full path". Building from scratch takes ~3 min, fine for CI.
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Build wasm (moonlight-common-c → WebAssembly)
+        run: bash wasm/build.sh
+
+      - name: Build PWA bundle
+        run: npm run build
+
+      - name: Upload PWA bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: pwa-dist
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------------
+  # Per-OS proxy binaries. Each downloads the prebuilt PWA into ./dist so
+  # rust-embed picks it up during `cargo build --release`.
+  # ----------------------------------------------------------------------
+  build-proxy:
+    needs: build-pwa
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows-x86_64
+            binary: moonlight-host-proxy.exe
+          - os: ubuntu-latest
+            name: linux-x86_64
+            binary: moonlight-host-proxy
+          - os: macos-latest
+            name: macos-aarch64
+            binary: moonlight-host-proxy
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download PWA bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: pwa-dist
+          path: dist
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo + target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: host-proxy
+          key: ${{ matrix.name }}
+
+      # Required by openssl-src (openssl = { vendored }) and aws-lc-sys on Windows.
+      - name: Install NASM + Perl (Windows only)
+        if: runner.os == 'Windows'
+        run: choco install -y nasm strawberryperl
+        shell: pwsh
+
+      - name: Build proxy
+        working-directory: host-proxy
+        run: cargo build --release
+
+      - name: Stage release directory
+        shell: bash
+        run: |
+          out="release-${{ matrix.name }}"
+          mkdir "$out"
+          cp "host-proxy/target/release/${{ matrix.binary }}" "$out/"
+          cp README.md "$out/" 2>/dev/null || true
+          cp LICENSE   "$out/" 2>/dev/null || true
+          ls -lh "$out"
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: proxy-${{ matrix.name }}
+          path: release-${{ matrix.name }}
+          if-no-files-found: error
+
+  # ----------------------------------------------------------------------
+  # Bundle the per-OS folders into archives and attach them to the release
+  # that the pushed tag implicitly created.
+  # ----------------------------------------------------------------------
+  release:
+    needs: build-proxy
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Download all proxy binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir packaged
+          cd artifacts
+          for d in proxy-*; do
+            name="moonlight-pwa-${d#proxy-}"
+            if [[ "$d" == *windows* ]]; then
+              (cd "$d" && zip -r "../../packaged/${name}.zip" .)
+            else
+              tar -C "$d" -czf "../packaged/${name}.tar.gz" .
+            fi
+          done
+          ls -lh ../packaged
+
+      - name: Create / update GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packaged/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

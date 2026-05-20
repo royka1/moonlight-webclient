@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+          actions-cache-folder: emsdk-cache
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: bash wasm/build.sh
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pwa-dist
+          path: dist
+          if-no-files-found: error
+
+  proxy:
+    needs: pwa
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: pwa-dist
+          path: dist
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: host-proxy
+      - working-directory: host-proxy
+        run: |
+          cargo clippy --release -- -D warnings
+          cargo build --release
